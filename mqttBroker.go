@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -20,11 +21,26 @@ import (
 var dbclient *mongo.Client
 var err error
 var clients []mqtt.Client
+var responseDataId string
 
-type Message struct {
-	Name  string
+type MessageTopic struct {
 	Topic string
-	Msg   string
+}
+
+type messageReceived struct {
+	Name        string
+	Status      string
+	Topic       string
+	TimeStampFE string
+}
+
+type messageSent struct {
+	Id          string
+	Name        string
+	Status      string
+	Topic       string
+	TimeStampFE string
+	TimeStampBE string
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -33,10 +49,24 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 var messagePubHandlerForDB mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Println("\ndb handler called")
-	//call for db storage of messages
-	dbVal := bson.D{{"msg", string(msg.Payload())}, {"topic", string(msg.Topic())}}
-	insertIntoDB(dbclient, dbVal)
-	fmt.Printf("\n inserted into db: %s\n", dbVal)
+
+	// fmt.Println(msg.Payload())
+	// fmt.Println(string(msg.Payload()))
+
+	var finaljson data
+	err := json.Unmarshal(msg.Payload(), &finaljson)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("finaljson=")
+	fmt.Println(finaljson)
+
+	doc := bson.D{{"Name", finaljson.Name}, {"Status", finaljson.Status}, {"Topic", finaljson.Topic}, {"TimeStampFE", finaljson.TimeStampFE}}
+
+	dbObjId := insertIntoDB(dbclient, doc)
+	responseDataId = dbObjId
+	fmt.Printf("\n inserted into db: %s\n", doc)
+
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -51,8 +81,9 @@ func main() {
 	//connection with database
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	dbclient, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb+srv://cherindranath:cherry2580@cluster0.s1pf5.mongodb.net/publish_msg.msg?retryWrites=true&w=majority"))
+	dbclient, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb+srv://cherindranath:cherry2580@cluster0.s1pf5.mongodb.net/publish_msg1.msg1?retryWrites=true&w=majority"))
 	if err != nil {
+		fmt.Println("this is connecting to mongodb error")
 		log.Fatal(err)
 	}
 
@@ -76,6 +107,7 @@ func main() {
 	//backend router
 	router := mux.NewRouter()
 	router.HandleFunc("/api/publish", publishData)
+	router.HandleFunc("/api/fetch", getTopicHistory)
 	handler := cors.Default().Handler(router)
 	log.Fatal(http.ListenAndServe(":8000", handler))
 
@@ -86,8 +118,36 @@ func main() {
 	}()
 }
 
+func getTopicHistory(writer http.ResponseWriter, request *http.Request) {
+	var topicName MessageTopic
+	err := json.NewDecoder(request.Body).Decode(&topicName)
+	if err != nil {
+		fmt.Println("---" + err.Error() + "---")
+		return
+	}
+	fmt.Print("\ntopic Name=")
+	fmt.Println(topicName)
+
+	docs := get_topic_history(dbclient, topicName.Topic)
+	fmt.Println(docs[0])
+
+	type msgTopicSend struct {
+		Topic   string
+		Updates []primitive.M
+	}
+
+	var msgTopicSend1 msgTopicSend
+	msgTopicSend1.Topic = topicName.Topic
+	msgTopicSend1.Updates = docs
+
+	writer.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(writer).Encode(msgTopicSend1)
+
+	return
+}
+
 func publishData(writer http.ResponseWriter, request *http.Request) {
-	var jsonData Message
+	var jsonData messageReceived
 	err := json.NewDecoder(request.Body).Decode(&jsonData)
 	if err != nil {
 		fmt.Println(err.Error() + "---")
@@ -96,6 +156,17 @@ func publishData(writer http.ResponseWriter, request *http.Request) {
 	fmt.Println("")
 	fmt.Println(jsonData)
 	publish(clients[0], jsonData)
+
+	var senddata messageSent
+	senddata.Id = responseDataId
+	senddata.Name = jsonData.Name
+	senddata.Status = jsonData.Status
+	senddata.Topic = jsonData.Topic
+	senddata.TimeStampFE = jsonData.TimeStampFE
+
+	writer.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(writer).Encode(senddata)
+	return
 }
 
 func create_db_device() (device mqtt.Client) {
@@ -142,14 +213,36 @@ func create_n_devices(n int) (clientsSlice []mqtt.Client) {
 	return clients
 }
 
-func insertIntoDB(dbclient *mongo.Client, data bson.D) {
+func insertIntoDB(dbclient *mongo.Client, data bson.D) (dbid string) {
 	collection := dbclient.Database("publish_msg").Collection("msg")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	res, err := collection.InsertOne(ctx, data)
 	if err != nil {
 		log.Fatal(err)
 	}
 	id := res.InsertedID
 	fmt.Println(id)
+	stringObjectID := id.(primitive.ObjectID).Hex()
+	return stringObjectID
+}
+
+func get_topic_history(dbclient *mongo.Client, topic string) (docs []bson.M) {
+	collection := dbclient.Database("publish_msg").Collection("msg")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filterCursor, err := collection.Find(ctx, bson.M{"Topic": topic})
+	if err != nil {
+		log.Fatal(err)
+	}
+	var updates []bson.M
+	err = filterCursor.All(ctx, &updates)
+	if err != nil {
+		log.Fatal(err)
+	}
+	//fmt.Println(updates)
+
+	return updates
 }

@@ -14,10 +14,38 @@
 <input type="text" id="topicName" placeholder="please insert your topic..">
 <br>
 <br>
-<label for="name">message you want to publish</label>
-<br>
-<input type="text" id="name" placeholder="please insert your message..">
-<button id="ask-button">Publish data</button>
 
+<div class="row">
+    <label for="name">name of device you want to publish</label>
+    <br>
+    <div class="block">
+        <input type="text" id="devicename" placeholder="please insert your device name..">
+    </div>
+    <div class="block">
+        <input type="checkbox" id="switch" class="checkbox" />
+        <label for="switch" class="toggle">  
+            <p style="font-size:98%; color:black; align-items: center; font-weight:bold; display: table-cell">OFFON</p>
+        </label>
+    </div>
+    <div class="block">
+        <button id="ask-button">Publish data</button>
+    </div>
+</div>
+<br>
+<p id="ask-data"></p>
+<br>
+<div class="row">
+    <label for="name">recent updates under topic</label>
+    <br>
+    <div class="block">
+        <input type="text" id="topicnamesearch" placeholder="please insert the topic name..">
+    </div>
+    <div class="block">
+        <button id="topicsearchbutton">search data</button>
+    </div>
+</div>
+<br>
+<p id="showtopicsearchdata"></p>
+<br>
 </body>
 </html>
