@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <title>IOT GOLANG</title>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+      <link rel="stylesheet" type="text/css" href="css/util.css">
+      <link rel="stylesheet" type="text/css" href="css/test.css">
+      <script src="js/publish.js" defer></script>
+
+   </head>
+   <body>
+      <div class="limiter">
+         <div class="container-login100" style="background-image: url('images/bg-01.jpg');">
+            <div class="wrap-login100 p-l-55 p-r-55 p-t-65 p-b-54">
+               <form class="login100-form validate-form">
+                  <span class="login100-form-title p-b-49">
+                  Publish
+                  </span>
+                  <div class="wrap-input100 validate-input m-b-23">
+                     <span class="label-input100">Topic</span>
+                     <input id="topicName" class="input100" type="text" placeholder="Type the topic you want to publish to">
+                  </div>
+                  <div class="wrap-input100 validate-input">
+                     <span class="label-input100">Device</span>
+                     <input id="devicename" class="input100" type="text" placeholder="Name of the device you want to publish to">
+                  </div>
+
+                  <br>
+                  <div>
+                    <label>Device ON/OFF</label>
+                    <label class="switch">
+                        <input id="switch" type="checkbox">
+                        <span class="slider"></span>
+                    </label>    
+                  </div>
+
+                  <div class="txt1 text-center p-t-54 p-b-20">
+                    <p id="show-data"></p>
+                 </div>
+
+
+                  
+                  
+                  <div class="text-right p-t-8 p-b-31">
+                      <a href="history.html">Recent updates</a>
+                  </div>
+
+                  <div class="wrap-login100-form-btn">
+                    <div class="login100-form-bgbtn"></div>
+                        <button id="ask-button" class="login100-form-btn" type='button'>Publish</button>
+                    </div>
+                 </div>
+         </div>
+      </div>
+      
+   </body>
+</html>
