@@ -30,6 +30,7 @@ publishButton.addEventListener("click", function () {
             result.TimeStampBE = String(new Date())
             console.log(result)
             showData.textContent = "The device "+ result.Name + " with id="+result.Id + " is turned "+result.Status+"\n We decided to turn it " +result.Status+ " at time="+ result.TimeStampFE + " and it got turned on at time="+ result.TimeStampBE;
+            //showData.textContent = "The device "+ result.Name + " is turned "+result.Status+"\n We decided to turn it " +result.Status+ " at time="+ result.TimeStampFE + " and it got turned on at time="+ result.TimeStampBE;
         });
     }).catch((error) => {
         console.log(error)
